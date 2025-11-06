@@ -1,5 +1,6 @@
 import { ButtonProps } from '@mui/base/Button';
 import { useButton } from '@mui/base/useButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import { styled } from '@mui/system';
 import clsx from 'clsx';
@@ -36,12 +37,22 @@ interface BtnProps {
     type?: "submit";
     onClick?: () => void;
     disabled?: boolean;
+    loading?: boolean;
 }
 
-export const UseButton = ({ text, type, onClick, disabled }: BtnProps) => {
+export const UseButton = ({ text, type, onClick, disabled, loading }: BtnProps) => {
     return (
         <Stack spacing={2} direction="row">
-            <CustomButton onClick={onClick} data-testid="button-display" type={type} disabled={disabled}>{text}</CustomButton>
+            <CustomButton onClick={onClick} data-testid="button-display" type={type} disabled={disabled || loading}>
+                {loading ? (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <CircularProgress size={16} sx={{ color: 'white' }} />
+                        <span>{text}</span>
+                    </Stack>
+                ) : (
+                    text
+                )}
+            </CustomButton>
         </Stack>
     );
 }
