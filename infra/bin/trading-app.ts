@@ -12,7 +12,8 @@ const env = {
 };
 
 // Create ONLY the Trading stack (autonome, pas de dépendances)
-const tradingStack = new TradingStack(app, 'TradingStack', {
+// Nouvelle stack avec un nom différent pour forcer le déploiement du nouveau code
+const tradingStack = new TradingStack(app, 'TradingStackV2', {
   env
 });
 

@@ -6,7 +6,7 @@ echo "📋 Outputs de TradingStack :"
 echo ""
 
 aws cloudformation describe-stacks \
-  --stack-name TradingStack \
+  --stack-name TradingStackV2 \
   --query 'Stacks[0].Outputs' \
   --output json 2>/dev/null | \
   jq -r '.[] | "\(.OutputKey):\n   \(.OutputValue)\n"' || \
@@ -15,6 +15,6 @@ aws cloudformation describe-stacks \
 echo ""
 echo "🔗 URL du webhook à utiliser dans TradingView :"
 aws cloudformation describe-stacks \
-  --stack-name TradingStack \
+  --stack-name TradingStackV2 \
   --query 'Stacks[0].Outputs[?OutputKey==`WebhookApiUrl`].OutputValue' \
   --output text 2>/dev/null || echo "   (non disponible)"

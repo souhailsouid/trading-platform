@@ -8,8 +8,8 @@ rsiThreshold = input.float(30.0, "RSI Threshold", minval=0, maxval=100, step=0.1
 rsi = ta.rsi(close, 14)
 plot(rsi, "RSI", color=color.purple, linewidth=2)
 
-// 🎯 Condition d'alerte : RSI < seuil
-alertCondition = rsi < rsiThreshold
+// 🎯 Condition d'alerte : RSI < seuil ET RSI valide (pas na)
+alertCondition = not na(rsi) and rsi < rsiThreshold
 
 // 📨 Message JSON pour le webhook
 // ⚠️ IMPORTANT : Copie ce message EXACTEMENT dans TradingView

@@ -4,10 +4,9 @@ import { DynamoDBClient, PutItemCommand, ScanCommand } from '@aws-sdk/client-dyn
 import { marshall } from '@aws-sdk/util-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import { TradingViewAlert, WebhookConfig } from '../../shared/types/trading';
+import { TradingViewAlert } from '../../shared/types/trading';
 import { 
   validateWebhookData, 
-  createSlackMessage, 
   corsHeaders, 
   handleCorsPreflight, 
   formatErrorResponse 
@@ -17,47 +16,6 @@ const snsClient = new SNSClient({
     region: "eu-west-3"
 });
 const dynamoClient = new DynamoDBClient({});
-
-// Charger la configuration des webhooks Slack
-const loadSlackWebhooks = async (): Promise<WebhookConfig[]> => {
-  try {
-    const response = await dynamoClient.send(new ScanCommand({
-      TableName: process.env.SLACK_WEBHOOKS_TABLE || 'slack-webhooks'
-    }));
-    return response.Items?.map(item => ({
-      symbol: item.symbol.S || '',
-      channel_id: item.channel_id.S || '',
-      webhook_url: item.webhook_url.S || ''
-    })) || [];
-  } catch (error: any) {
-    // Si la table n'existe pas, c'est OK, on continue sans webhooks Slack
-    if (error.name === 'ResourceNotFoundException') {
-      console.log('⚠️  Slack webhooks table not found, continuing without Slack notifications');
-      return [];
-    }
-    console.error('Error loading Slack webhooks:', error);
-    return [];
-  }
-};
-
-// Envoyer une notification Slack
-const sendSlackNotification = async (symbol: string, message: any): Promise<void> => {
-  try {
-    const webhooks = await loadSlackWebhooks();
-    const webhook = webhooks.find(w => w.symbol === symbol);
-    
-    if (!webhook) {
-      console.warn(`No Slack webhook found for ${symbol}`);
-      return;
-    }
-
-    await axios.post(webhook.webhook_url, message);
-    console.log(`Notification sent to Slack channel for ${symbol}`);
-  } catch (error) {
-    console.error(`Error sending Slack notification for ${symbol}:`, error);
-    throw error;
-  }
-};
 
 // Charger la configuration des bots Telegram
 const loadTelegramBots = async (): Promise<Array<{symbol: string; chatId: string; botToken: string}>> => {
@@ -316,10 +274,6 @@ const processTradeSignal = async (data: TradingViewAlert) => {
     Item: marshall(cleanItemData)
   }));
 
-  // Envoyer une notification Slack
-  const slackMessage = createSlackMessage(data);
-  await sendSlackNotification(data.symbol, slackMessage);
-
   // Envoyer une notification Telegram
   await sendTelegramNotification(data.symbol, data);
 
@@ -344,8 +298,7 @@ const processTradeSignal = async (data: TradingViewAlert) => {
         ${data.indicators.stoch ? `Stoch K: ${data.indicators.stoch.k?.toFixed(2) || 'N/A'}` : ''}
         ` : ''}
       `
-    },
-    slack: JSON.stringify(slackMessage)
+    }
   };
 
   console.log('Sending SNS notification with TopicArn:', process.env.SNS_TOPIC_ARN);

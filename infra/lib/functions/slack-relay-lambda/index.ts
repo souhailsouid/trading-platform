@@ -8,24 +8,45 @@ const secretsClient = new SecretsManagerClient({
 });
 
 // Fonction pour récupérer le token Slack depuis Secrets Manager
-async function getSlackBotToken(): Promise<string> {
-  const command = new GetSecretValueCommand({ 
-    SecretId: 'slack/bot-token'
-  });
-  
-  const response = await secretsClient.send(command);
-  const secretString = response.SecretString;
-  if (!secretString) throw new Error('Secret not found');
-  const secret = JSON.parse(secretString);
-  return secret.SLACK_BOT_TOKEN;
+async function getSlackBotToken(): Promise<string | null> {
+  try {
+    const command = new GetSecretValueCommand({ 
+      SecretId: 'slack/bot-token'
+    });
+    
+    const response = await secretsClient.send(command);
+    const secretString = response.SecretString;
+    if (!secretString) {
+      console.warn('⚠️  Slack bot token secret not found in Secrets Manager');
+      return null;
+    }
+    const secret = JSON.parse(secretString);
+    return secret.SLACK_BOT_TOKEN;
+  } catch (error: any) {
+    if (error.name === 'ResourceNotFoundException') {
+      console.warn('⚠️  Slack bot token secret not found in Secrets Manager. Slack notifications will be skipped.');
+      return null;
+    }
+    console.error('❌ Error retrieving Slack bot token:', error);
+    throw error;
+  }
 }
 
 // Handler Lambda pour SNS
 export const handler = async (event: SNSEvent) => {
   console.log('Received SNS event:', JSON.stringify(event, null, 2));
   
-  // Récupérer le token Slack
+  // Récupérer le token Slack (peut être null si le secret n'existe pas)
   const token = await getSlackBotToken();
+  
+  // Si pas de token, on skip l'envoi Slack mais on continue le traitement
+  if (!token) {
+    console.log('ℹ️  Skipping Slack notification (token not configured)');
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'SNS event processed, Slack notification skipped (token not configured)' })
+    };
+  }
   
   // Initialiser l'app Slack
   const app = new App({

@@ -6,10 +6,11 @@ echo "🤖 Configuration d'un bot Telegram pour les alertes trading"
 echo ""
 
 # Vérifier si les variables sont définies
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
-  echo "Usage: $0 <SYMBOL> <CHAT_ID> <BOT_TOKEN>"
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 <SYMBOL> <CHAT_ID> [BOT_TOKEN]"
   echo ""
   echo "Exemple:"
+  echo "  $0 TAOUSDT 123456789"
   echo "  $0 TAOUSDT 123456789 8327759989:AAGa8KWU5jJX8Tarm_hLGvkM38Vipgcr8EY"
   echo ""
   echo "Pour obtenir votre Chat ID:"
@@ -22,11 +23,11 @@ fi
 
 SYMBOL=$1
 CHAT_ID=$2
-BOT_TOKEN=$3
+BOT_TOKEN=${3:-"8327759989:AAGa8KWU5jJX8Tarm_hLGvkM38Vipgcr8EY"}
 
 # Récupérer le nom de la table DynamoDB
 TABLE_NAME=$(aws cloudformation describe-stacks \
-  --stack-name TradingStack \
+  --stack-name TradingStackV2 \
   --query 'Stacks[0].Outputs[?OutputKey==`TelegramBotsTableName`].OutputValue' \
   --output text 2>/dev/null)
 

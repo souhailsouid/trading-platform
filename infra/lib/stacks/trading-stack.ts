@@ -8,7 +8,6 @@ import { Construct } from 'constructs';
 import * as path from 'path';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 
   
@@ -39,21 +38,10 @@ export class TradingStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-      // Récupère le secret
- const slackBotTokenSecret = secretsmanager.Secret.fromSecretNameV2(
-    this, 'SlackBotTokenSecret', 'slack/bot-token'
-  );
     // Create SNS topic for trading notifications
     const tradingNotificationsTopic = new sns.Topic(this, 'TradingNotificationsTopic', {
       displayName: 'Trading Notifications',
-      topicName: 'trading-notifications',
-    });
-
-    // Table pour les webhooks Slack
-    const slackWebhooksTable = new dynamodb.Table(this, 'SlackWebhooksTable', {
-      partitionKey: { name: 'symbol', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
+      topicName: 'trading-notifications-v2',
     });
 
     // Table pour les bots Telegram
@@ -70,10 +58,10 @@ export class TradingStack extends cdk.Stack {
       handler: 'handler',
       memorySize: 256,
       timeout: cdk.Duration.seconds(30),
+      description: `Webhook handler for TradingView alerts - Telegram notifications only - Updated ${new Date().toISOString()}`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         TRADING_ALERTS_TABLE: this.tradingAlertsTable.tableName,
-        SLACK_WEBHOOKS_TABLE: slackWebhooksTable.tableName,
         TELEGRAM_BOTS_TABLE: telegramBotsTable.tableName,
         SNS_TOPIC_ARN: tradingNotificationsTopic.topicArn
       },
@@ -121,7 +109,6 @@ export class TradingStack extends cdk.Stack {
     // Grant permissions
     this.tradingAlertsTable.grantWriteData(webhookHandler);
     this.tradingAlertsTable.grantReadData(getAlertsHandler);
-    slackWebhooksTable.grantReadData(webhookHandler);
     telegramBotsTable.grantReadData(webhookHandler);
     tradingNotificationsTopic.grantPublish(webhookHandler);
 
@@ -144,7 +131,7 @@ export class TradingStack extends cdk.Stack {
     // Créer une clé API avec une valeur spécifique
     const apiKeyValue = 'tv-webhook-key-' + Buffer.from(Date.now().toString()).toString('base64');
     const apiKey = new apigateway.ApiKey(this, 'TradingViewWebhookApiKey', {
-      apiKeyName: '___trading-view-webhook-key-',
+      apiKeyName: '___trading-view-webhook-key-v2-',
       enabled: true,
       description: 'Clé API pour les webhooks TradingView',
     });
@@ -187,34 +174,8 @@ export class TradingStack extends cdk.Stack {
       apiKeyRequired: false,
     });
       
-    const slackRelayLambda = new nodejs.NodejsFunction(this, 'SlackRelayLambda', {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, '../functions/slack-relay-lambda/index.ts'),
-      handler: 'handler',
-      environment: {
-        SNS_TOPIC_ARN: tradingNotificationsTopic.topicArn
-      },
-      bundling: {
-        minify: true,
-        sourceMap: false, // Désactivé temporairement pour économiser de l'espace disque
-        target: 'node18',
-        forceDockerBundling: false, // Ne pas utiliser Docker
-        externalModules: [
-          'aws-sdk',
-          '@aws-sdk/*',
-        ],
-      }
-    });
-      
     // Donner les permissions nécessaires
-    slackBotTokenSecret.grantRead(slackRelayLambda);
     tradingNotificationsTopic.grantPublish(webhookHandler);
-    tradingNotificationsTopic.grantSubscribe(slackRelayLambda);
-
-    // Ajouter la subscription SNS → Lambda
-    tradingNotificationsTopic.addSubscription(
-      new subscriptions.LambdaSubscription(slackRelayLambda)
-    );
 
     // Outputs pour faciliter l'utilisation
     new cdk.CfnOutput(this, 'WebhookApiUrl', {
