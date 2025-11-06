@@ -1,0 +1,63 @@
+//@version=5
+indicator("RSI Historical Analysis", overlay=false)
+
+// Paramètres RSI
+rsiLength = input.int(14, "RSI Length")
+rsiOverbought = input.int(70, "RSI Overbought")
+rsiOversold = input.int(30, "RSI Oversold")
+
+// Calcul RSI
+rsi = ta.rsi(close, rsiLength)
+
+// Détecter quand RSI < 30 (oversold)
+rsiOversoldCondition = rsi < rsiOversold
+
+// Variables pour suivre l'historique
+var int oversoldCount = 0
+var float[] oversoldPrices = array.new_float(0)
+var int[] oversoldTimes = array.new_int(0)
+
+// Ajouter à l'historique quand RSI < 30
+if rsiOversoldCondition
+    oversoldCount := oversoldCount + 1
+    array.push(oversoldPrices, close)
+    array.push(oversoldTimes, time)
+
+// Afficher les informations
+plot(rsi, "RSI", color=color.blue)
+hline(rsiOverbought, "Overbought", color=color.red)
+hline(rsiOversold, "Oversold", color=color.green)
+
+// Afficher le compteur
+if barstate.islast
+    label.new(bar_index, 80, 
+        text="RSI < 30 moments: " + str.tostring(oversoldCount) + "\n" +
+             "Current RSI: " + str.tostring(rsi, "#.##"),
+        color=color.blue,
+        textcolor=color.white)
+
+// Alert condition - déclencher quand RSI < 30
+alertcondition(rsiOversoldCondition, 
+    title="RSI Oversold Alert", 
+    message="RSI is oversold: {{plot_0}} at price {{close}}")
+
+// Fonction pour obtenir l'historique complet
+getOversoldHistory() =>
+    if array.size(oversoldPrices) > 0
+        result = ""
+        for i = 0 to array.size(oversoldPrices) - 1
+            price = array.get(oversoldPrices, i)
+            timeValue = array.get(oversoldTimes, i)
+            result := result + "Price: " + str.tostring(price) + " at " + str.tostring(timeValue) + "\n"
+        result
+    else
+        "No oversold moments found"
+
+// Afficher l'historique dans la console (pour debug)
+if barstate.islast and array.size(oversoldPrices) > 0
+    history = getOversoldHistory()
+    label.new(bar_index, 60, 
+        text="Historical RSI < 30:\n" + history,
+        color=color.yellow,
+        textcolor=color.black,
+        size=size.small) 

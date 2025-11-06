@@ -1,0 +1,35 @@
+//@version=6
+indicator(title="Webhook Alert – RSI", shorttitle="RSI Alert", overlay=false)
+
+// ⚙️ Configuration du seuil RSI
+rsiThreshold = input.float(30.0, "RSI Threshold", minval=0, maxval=100, step=0.1)
+
+// 📊 RSI (Relative Strength Index)
+rsi = ta.rsi(close, 14)
+plot(rsi, "RSI", color=color.purple, linewidth=2)
+
+// 🎯 Condition d'alerte : RSI < seuil
+alertCondition = rsi < rsiThreshold
+
+// 📨 Message JSON pour le webhook
+// ⚠️ IMPORTANT : Copie ce message EXACTEMENT dans TradingView
+webhookMessage = '{"alertType":"RSI","symbol":"{{ticker}}","price":{{close}},"time":"{{time}}","indicators":{"rsi":{{plot_0}}}}'
+
+// 🚨 Créer l'alerte
+alertcondition(
+  alertCondition, 
+  title="Webhook RSI Alert", 
+  message=webhookMessage
+)
+
+// 📊 Affichage visuel
+bgcolor(alertCondition ? color.new(color.red, 90) : na, title="RSI Alert Background")
+
+// 📝 Labels d'information
+if alertCondition and barstate.islast
+    label.new(bar_index, rsi, 
+        text="⚠️ RSI Alert\nRSI: " + str.tostring(rsi, "#.##") + "\nPrice: " + str.tostring(close, "#.##"), 
+        color=color.red, 
+        textcolor=color.white, 
+        style=label.style_label_down)
+

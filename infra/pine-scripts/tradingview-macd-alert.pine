@@ -1,0 +1,81 @@
+//@version=6
+indicator(title="Webhook Alert – MACD Signals", shorttitle="MACD Alert", overlay=false)
+
+// ⚙️ Configuration MACD
+macdFastLength = input.int(12, "MACD Fast Length", minval=1)
+macdSlowLength = input.int(26, "MACD Slow Length", minval=1)
+macdSignalLength = input.int(9, "MACD Signal Length", minval=1)
+
+// 📉 Calcul MACD
+[macd_line, signal_line, macd_histogram] = ta.macd(close, macdFastLength, macdSlowLength, macdSignalLength)
+
+// 📊 Plot des composants MACD
+plot(macd_line, "MACD Line", color=color.blue, linewidth=2)
+plot(signal_line, "Signal Line", color=color.red, linewidth=1)
+plot(macd_histogram, "MACD Histogram", style=plot.style_histogram, color=color.green)
+hline(0, "Zero Line", color=color.gray, linestyle=hline.style_dashed)
+
+// 🎯 Détection des signaux MACD
+
+// 1. Croisements de ligne de signal
+bullishSignalCrossover = ta.crossover(macd_line, signal_line)  // MACD croise au-dessus de la ligne de signal
+bearishSignalCrossover = ta.crossunder(macd_line, signal_line)  // MACD croise en-dessous de la ligne de signal
+
+// 2. Croisements de ligne zéro
+bullishZeroCrossover = ta.crossover(macd_line, 0)  // MACD croise au-dessus de zéro
+bearishZeroCrossover = ta.crossunder(macd_line, 0)  // MACD croise en-dessous de zéro
+
+// 3. Divergences (simplifiées - détection basique)
+// Divergence haussière : prix fait un plus bas, MACD fait un plus haut
+price_low = ta.lowest(low, 5)
+macd_low = ta.lowest(macd_line, 5)
+bullishDivergence = low == price_low and macd_line > macd_low and macd_line < 0
+
+// Divergence baissière : prix fait un plus haut, MACD fait un plus bas
+price_high = ta.highest(high, 5)
+macd_high = ta.highest(macd_line, 5)
+bearishDivergence = high == price_high and macd_line < macd_high and macd_line > 0
+
+// 🎯 Condition d'alerte : n'importe quel signal MACD
+alertCondition = bullishSignalCrossover or bearishSignalCrossover or 
+                 bullishZeroCrossover or bearishZeroCrossover or 
+                 bullishDivergence or bearishDivergence
+
+// 🔍 Déterminer le type de signal
+signalType = bullishSignalCrossover ? "bullish_signal_crossover" :
+             bearishSignalCrossover ? "bearish_signal_crossover" :
+             bullishZeroCrossover ? "bullish_zero_crossover" :
+             bearishZeroCrossover ? "bearish_zero_crossover" :
+             bullishDivergence ? "bullish_divergence" :
+             bearishDivergence ? "bearish_divergence" : "unknown"
+
+// 📨 Message JSON pour le webhook
+// ⚠️ IMPORTANT : Copie ce message EXACTEMENT dans TradingView
+// Les variables {{plot_X}} sont remplacées par TradingView
+// plot_0 = MACD Line, plot_1 = Signal Line, plot_2 = Histogram
+// Note: signalType sera remplacé dynamiquement par le script Pine
+// Si plusieurs signaux se déclenchent, le premier dans l'ordre de priorité sera utilisé
+webhookMessage = '{"alertType":"MACD","signalType":"' + signalType + '","symbol":"{{ticker}}","price":{{close}},"time":"{{time}}","indicators":{"macd":{"macd":{{plot_0}},"signal":{{plot_1}},"histogram":{{plot_2}}}}}'
+
+// 🚨 Créer l'alerte
+alertcondition(
+  alertCondition, 
+  title="Webhook MACD Alert", 
+  message=webhookMessage
+)
+
+// 📊 Affichage visuel des signaux
+plotshape(bullishSignalCrossover, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Bullish Signal Crossover")
+plotshape(bearishSignalCrossover, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Bearish Signal Crossover")
+plotshape(bullishZeroCrossover, style=shape.circle, location=location.belowbar, color=color.blue, size=size.tiny, title="Bullish Zero Crossover")
+plotshape(bearishZeroCrossover, style=shape.circle, location=location.abovebar, color=color.orange, size=size.tiny, title="Bearish Zero Crossover")
+
+// 📝 Labels d'information
+if alertCondition and barstate.islast
+    label.new(bar_index, macd_line, 
+        text="⚠️ MACD Alert\nType: " + signalType + "\nMACD: " + str.tostring(macd_line, "#.####") + 
+             "\nSignal: " + str.tostring(signal_line, "#.####") + "\nPrice: " + str.tostring(close, "#.##"), 
+        color=color.yellow, 
+        textcolor=color.black, 
+        style=label.style_label_down)
+

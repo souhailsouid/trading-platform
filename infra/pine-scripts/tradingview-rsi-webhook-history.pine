@@ -1,0 +1,87 @@
+//@version=5
+indicator("RSI Historical Webhook", overlay=false)
+
+// Paramètres
+rsiLength = input.int(14, "RSI Length")
+rsiOversold = input.int(30, "RSI Oversold")
+lookbackPeriod = input.int(100, "Lookback Period (bars)")
+
+// Calcul RSI
+rsi = ta.rsi(close, rsiLength)
+
+// Détecter quand RSI < 30
+rsiOversoldCondition = rsi < rsiOversold
+
+// Variables pour l'historique
+var int oversoldCount = 0
+var float[] oversoldPrices = array.new_float(0)
+var int[] oversoldTimes = array.new_int(0)
+var float[] oversoldRsiValues = array.new_float(0)
+
+// Ajouter à l'historique quand RSI < 30
+if rsiOversoldCondition
+    oversoldCount := oversoldCount + 1
+    array.push(oversoldPrices, close)
+    array.push(oversoldTimes, time)
+    array.push(oversoldRsiValues, rsi)
+
+// Limiter la taille des arrays pour éviter la surcharge
+if array.size(oversoldPrices) > lookbackPeriod
+    array.shift(oversoldPrices)
+    array.shift(oversoldTimes)
+    array.shift(oversoldRsiValues)
+
+// Fonction pour créer le JSON de l'historique
+createHistoryJson() =>
+    if array.size(oversoldPrices) > 0
+        json = "{"
+        json := json + "\"symbol\":\"" + syminfo.ticker + "\","
+        json := json + "\"current_price\":" + str.tostring(close) + ","
+        json := json + "\"current_rsi\":" + str.tostring(rsi, "#.##") + ","
+        json := json + "\"oversold_count\":" + str.tostring(oversoldCount) + ","
+        json := json + "\"history\":["
+        
+        for i = 0 to array.size(oversoldPrices) - 1
+            price = array.get(oversoldPrices, i)
+            timeValue = array.get(oversoldTimes, i)
+            rsiValue = array.get(oversoldRsiValues, i)
+            
+            json := json + "{"
+            json := json + "\"price\":" + str.tostring(price) + ","
+            json := json + "\"time\":" + str.tostring(timeValue) + ","
+            json := json + "\"rsi\":" + str.tostring(rsiValue, "#.##")
+            json := json + "}"
+            
+            if i < array.size(oversoldPrices) - 1
+                json := json + ","
+        
+        json := json + "]}"
+        json
+    else
+        "{\"symbol\":\"" + syminfo.ticker + "\",\"oversold_count\":0,\"history\":[]}"
+
+// Alert condition avec historique complet
+alertcondition(rsiOversoldCondition, 
+    title="RSI Oversold with History", 
+    message=createHistoryJson())
+
+// Affichage visuel
+plot(rsi, "RSI", color=color.blue)
+hline(rsiOversold, "Oversold", color=color.green)
+
+// Afficher les statistiques
+if barstate.islast
+    label.new(bar_index, 80, 
+        text="RSI < 30 moments: " + str.tostring(oversoldCount) + "\n" +
+             "Current RSI: " + str.tostring(rsi, "#.##") + "\n" +
+             "Last " + str.tostring(lookbackPeriod) + " bars",
+        color=color.blue,
+        textcolor=color.white)
+
+// Marquer les points RSI < 30 sur le graphique
+plotshape(rsiOversoldCondition, 
+    title="RSI Oversold", 
+    location=location.bottom, 
+    color=color.red, 
+    style=shape.triangleup, 
+    size=size.small) 

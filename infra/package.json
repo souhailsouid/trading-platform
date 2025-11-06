@@ -1,0 +1,48 @@
+{
+  "name": "trading-backend-cdk",
+  "version": "1.0.0",
+  "description": "AWS CDK infrastructure for TradingView webhook alerts and trading signals",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "./scripts/deploy.sh",
+    "get-outputs": "./scripts/get-outputs.sh",
+    "test:api": "./scripts/test-api.sh",
+    "test:webhook": "./scripts/test-webhook.sh",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "bootstrap": "cdk bootstrap"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "trading",
+    "tradingview",
+    "webhook",
+    "lambda",
+    "dynamodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.0.0",
+    "@aws-sdk/util-dynamodb": "^3.0.0",
+    "@slack/bolt": "^4.4.0",
+    "aws-cdk-lib": "^2.199.0",
+    "aws-lambda": "^1.0.7",
+    "axios": "^1.6.7",
+    "constructs": "^10.4.2",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@types/uuid": "^10.0.0",
+    "aws-cdk": "^2.1017.0",
+    "esbuild": "^0.25.12",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.4"
+  }
+}

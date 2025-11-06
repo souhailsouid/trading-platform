@@ -1,0 +1,32 @@
+service: get-trading-alerts
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+  environment:
+    TRADING_ALERTS_TABLE: ${self:custom.tradingAlertsTable}
+
+custom:
+  tradingAlertsTable: trading-alerts-${opt:stage, 'dev'}
+
+functions:
+  getTradingAlerts:
+    handler: index.handler
+    events:
+      - http:
+          path: /alerts
+          method: get
+          cors: true
+      - http:
+          path: /alerts/{symbol}
+          method: get
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:Query
+        Resource: 
+          - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tradingAlertsTable}"
+          - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tradingAlertsTable}/index/*" 
