@@ -8,13 +8,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [ticker24hData, setTicker24hData] = useState<Ticker24hDataType | undefined>(undefined);
   const [tradesData, setTradesData] = useState<TradeDataType | undefined>(undefined);
   const [kLinesData, setKLinesData] = useState<unknown | undefined>(undefined);
+  const [loading, setLoading] = useState<boolean>(false);
 
   return (
     <DataContext.Provider value={{
       tickerData, setTickerData,
       ticker24hData, setTicker24hData,
       tradesData, setTradesData,
-      kLinesData, setKLinesData
+      kLinesData, setKLinesData,
+      loading, setLoading
     }}>
       {children}
     </DataContext.Provider>

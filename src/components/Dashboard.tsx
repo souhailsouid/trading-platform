@@ -1,11 +1,10 @@
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import React from 'react';
 import { useData } from '../hooks/contexts/useData';
+import { useSymbol } from '../hooks/contexts/useSymbol';
 import { FlexChartContainer } from '../styles/StyledChart';
 import TradesData from './TradesData';
-import TradingSignals from './TradingSignals';
-import TradingAlerts from './TradingAlerts';
-import TestAlertButton from './TestAlertButton';
 import CandlestickChart from './ui/chart/CandlestickChart';
 import MACDChart from './ui/chart/MACDChart';
 import StochasticChart from './ui/chart/StochasticChart';
@@ -14,10 +13,30 @@ import MarketDataDisplaysGrid from './ui/grids/ResponsiveDataDisplay';
 import MarketInfo from './ui/headers/MarketInfo';
 
 const Dashboard = () => {
-    const { ticker24hData, kLinesData } = useData();
+    const { ticker24hData, kLinesData, loading } = useData();
+    const { selectedSymbol } = useSymbol();
  
-    if (!ticker24hData  || !kLinesData) {
-        return null
+    // Afficher le loader seulement si on est en train de charger ET qu'un symbole a été sélectionné
+    if (loading && selectedSymbol.value) {
+        return (
+            <Box 
+                sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    minHeight: '400px',
+                    width: '100%'
+                }} 
+                data-testid="dashboard-loading"
+            >
+                <CircularProgress size={60} />
+            </Box>
+        );
+    }
+
+    // Si pas de données et pas de symbole sélectionné, ne rien afficher
+    if (!ticker24hData || !kLinesData) {
+        return null;
     }
 
     return (
@@ -32,9 +51,6 @@ const Dashboard = () => {
                 <StochasticChart klinesData={Array.isArray(kLinesData) ? kLinesData: []} />
             </FlexChartContainer>
             <MarketDataDisplaysGrid data={ticker24hData} />
-            <TradingSignals />
-            <TestAlertButton />
-            <TradingAlerts />
             <TradesData />
         </Box>
     );
