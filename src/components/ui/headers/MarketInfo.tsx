@@ -5,7 +5,7 @@ import { Ticker24hDataType } from '../../../types';
 
 import MarketInfoGrid from '../grids/MarketInfoGrid';
 import ResponsiveGridItem from '../grids/ResponsiveGridItem';
-
+import { CircularProgress } from '@mui/material';
 
 type HeaderProps = {
     data: Ticker24hDataType;
@@ -16,7 +16,7 @@ type HeaderProps = {
 const MarketInfo = ({ data, currencyPair }: HeaderProps) => {
     const { currentMessage } = useBinanceWebSocket(data.symbol);
     if (!currentMessage?.data) {
-        return <p>Loading...</p>
+        return <CircularProgress />
     }
     return (
         <HeaderContainer container data-testid="marketInfo-component-display">

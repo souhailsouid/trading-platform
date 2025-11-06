@@ -1,3 +1,4 @@
+import React from "react";
 import Header from "./components/ui/NavBar/Header";
 import { DataProvider } from "./hooks/contexts/DataContext";
 import { SymbolProvider } from "./hooks/contexts/SymbolsContext";
