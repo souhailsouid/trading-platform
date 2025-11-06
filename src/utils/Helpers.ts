@@ -74,3 +74,54 @@ export const parseAndFormatNumber = (numberString: string, fixed: number = 2): s
 export const ensureArray = (data: Array<unknown>) => {
     return Array.isArray(data) ? data : [];
 }
+
+// Fonction pour extraire la valeur d'une alerte selon la clé
+export const getTradingAlertValue = (alert: { 
+    price?: number; 
+    symbol?: string; 
+    timestamp?: string; 
+    time?: string; 
+    alertType?: string;
+}, key: string): string | number => {
+    if (key === 'price') {
+        return alert.price ?? 0;
+    } else if (key === 'symbol') {
+        return alert.symbol ?? '';
+    } else if (key === 'timestamp' || key === 'time') {
+        return alert.timestamp || alert.time || '';
+    } else if (key === 'alertType') {
+        return alert.alertType || '';
+    }
+    return '';
+};
+
+// Fonction générique pour trier les alertes
+export const sortAlerts = <T extends Record<string, any>>(
+    alerts: T[],
+    order: Order,
+    orderBy: keyof T | string,
+    getValue?: (alert: T, key: string) => string | number
+): T[] => {
+    return [...alerts].sort((a, b) => {
+        let aValue: string | number = '';
+        let bValue: string | number = '';
+        
+        if (getValue) {
+            aValue = getValue(a, orderBy as string);
+            bValue = getValue(b, orderBy as string);
+        } else {
+            const key = orderBy as keyof T;
+            aValue = a[key] ?? '';
+            bValue = b[key] ?? '';
+        }
+        
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return order === 'asc' 
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        }
+        
+        const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        return order === 'asc' ? comparison : -comparison;
+    });
+}
