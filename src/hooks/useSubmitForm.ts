@@ -4,7 +4,7 @@ import { useData } from './contexts/useData';
 
 export const useSubmitForm = (selectedSymbol: string) => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<unknown>(null);
+    const [error, setError] = useState<Error | null>(null);
     const { setTickerData, setTicker24hData, setTradesData, setKLinesData } = useData()
 
     const submitForm = async () => {
@@ -17,7 +17,7 @@ export const useSubmitForm = (selectedSymbol: string) => {
                 setTradesData(tradesData);
                 setKLinesData(kLinesData)
             } catch (error) {
-                setError(error);
+                setError(error as Error);
             } finally {
                 setLoading(false);
             }
