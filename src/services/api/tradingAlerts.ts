@@ -1,7 +1,7 @@
 // Service API pour récupérer les alertes trading depuis cloud-backend
 
 const API_BASE_URL = import.meta.env.VITE_TRADING_API_URL || 
-  'https://4lr0f9o34g.execute-api.eu-west-3.amazonaws.com/prod';
+  'https://a3wcfx3nwg.execute-api.eu-west-3.amazonaws.com/prod';
 
 const WEBHOOK_URL = `${API_BASE_URL}/webhooks`;
 
