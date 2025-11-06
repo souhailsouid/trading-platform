@@ -4,6 +4,7 @@ import { useFetchCurrencyPair } from '../hooks/useFetchCurrencyPair';
 import { useSubmitForm } from '../hooks/useSubmitForm';
 import { currencyPair, debounce } from '../utils/Helpers';
 import FormComponent from './ui/forms/Form';
+import { CircularProgress } from '@mui/material';
 
 const Form: React.FC = () => {
 
@@ -28,7 +29,7 @@ const Form: React.FC = () => {
         if (selectedSymbol.value) debouncedHandleSubmit()
     }
 
-    if (isLoading) return <p>Loading...</p>;
+    if (isLoading) return <CircularProgress />;
     if (isError) return <p>Error loading cryptocurrency data</p>;
 
     return (

@@ -1,14 +1,16 @@
 import React from 'react';
 import Dashboard from '../components/Dashboard';
 import Form from '../components/Form';
-import TradingAlerts from '../components/TradingAlerts';
+import SendAlertForm from '../components/SendAlertForm';
+import WebhookResults from '../components/WebhookResults';
 
 const Home: React.FC = () => {
   return (
     <div style={{ margin: "3rem auto" }}>
       <Form />
       <Dashboard />
-      <TradingAlerts />
+      <SendAlertForm />
+      <WebhookResults />
     </div>
   );
 };
